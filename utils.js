@@ -1,45 +1,32 @@
 export function getPath(element) {
-  if (!element) {
-    return '';
+  function getPathSegment(el) {
+    const siblings = Array.from(el.parentNode.children);
+    const sameTagSiblings = siblings.filter(sibling => sibling.tagName === el.tagName);
+    const index = siblings.indexOf(el) + 1;
+
+    let segment = el.tagName.toLowerCase();
+    if (sameTagSiblings.length > 1) {
+      segment += `:nth-child(${index})`;
+    }
+
+    // Add other attributes if available
+    const attributes = ['type', 'name', 'href', 'alt', 'title'].filter(attr => el.hasAttribute(attr));
+    if (attributes.length > 0) {
+      segment += attributes.map(attr => `[${attr}="${el.getAttribute(attr)}"]`).join('');
+    }
+
+    return segment;
   }
 
-  let path = [];
-
-  while (element.nodeType === Node.ELEMENT_NODE) {
-    let selector = element.nodeName.toLowerCase();
-
-    const stableAttributes = ['id', 'role', 'type', 'placeholder'];
-    Array.from(element.attributes).forEach((attr) => {
-      if (stableAttributes.includes(attr.name)) {
-        selector += `[${attr.name}="${attr.value}"]`;
-      }
-    });
-
-    if (element === document.body) {
-      path.unshift(selector);
-      break;
-    }
-
-    let index = 1;
-    let sibling = element.previousSibling;
-    while (sibling) {
-      if (sibling.nodeType === Node.ELEMENT_NODE && sibling.nodeName === element.nodeName) {
-        index++;
-      }
-      sibling = sibling.previousSibling;
-    }
-
-    if (index > 1) {
-      selector += `:nth-of-type(${index})`;
-    }
-
-    path.unshift(selector);
-    element = element.parentNode;
+  const path = [];
+  let currentElement = element;
+  while (currentElement && currentElement.nodeType === Node.ELEMENT_NODE) {
+    path.unshift(getPathSegment(currentElement));
+    currentElement = currentElement.parentNode;
   }
 
-  return path.slice(-5).join(' > ');
+  return path.join(' > ');
 }
-
 
 /**
  * Generates a random delay between min and max values (inclusive).
